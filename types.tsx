@@ -16,11 +16,8 @@ declare global {
 export type RootStackParamList = {
   Root: NavigatorScreenParams<RootTabParamList> | undefined;
   Home: undefined;
-  CleaningIndex: undefined;
-  ObjectIndex: undefined;
-  ObjectView: undefined;
-  PlannerOverview: undefined;
-  ChatDetail: { val: any };
+  Statistic: undefined;
+  About: undefined;
 };
 
 export type CheckoutStackParamList = {

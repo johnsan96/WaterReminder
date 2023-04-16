@@ -6,20 +6,19 @@
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import * as React from "react";
-/* import Navigator from "./Navigator"; */
+import Navigator from "./Navigator"; 
 import { RootStackParamList } from "../types";
-/* 
-import dashboard from "../views/dashboard/Dashboard";
-import cleaningIndex from "../views/cleaningIndex/CleaningIndex";
-import objectIndex from "../views/objectIndex/ObjectIndex";
-import objectView from "../views/objectView/ObjectView";
-import plannerOverview from "../views/plannerOverview/PlannerOverview"; */
+
+import Home from "../views/Home";
+import About from "../views/About";
+import Statistic from "../views/Statistic";
+
 
 export default function Navigation() {
   return (
     <NavigationContainer>
       <RootNavigator />
-{/*       <Navigator /> */}
+      <Navigator /> 
     </NavigationContainer>
   );
 }
@@ -55,11 +54,10 @@ export class RootNavigator extends React.Component {
           },
         }}
       >
-       {/*  <Stack.Screen name="Home" component={dashboard} />
-        <Stack.Screen name="CleaningIndex" component={cleaningIndex} />
-        <Stack.Screen name="ObjectIndex" component={objectIndex} />
-        <Stack.Screen name="ObjectView" component={objectView} />
-        <Stack.Screen name="PlannerOverview" component={plannerOverview} /> */}
+        <Stack.Screen name="Home" component={Home} />
+        <Stack.Screen name="About" component={Statistic} />
+        <Stack.Screen name="Statistic" component={Statistic} />
+
       </Stack.Navigator>
     );
   }
