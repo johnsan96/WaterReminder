@@ -15,6 +15,16 @@ import db from '../db/firebase'
 
 import { doc, getDoc } from "firebase/firestore";
 
+import * as SecureStore from 'expo-secure-store';
+
+import { UserContext } from '../navigation/UserContext';
+
+
+
+async function save(key, value) {
+    await SecureStore.setItemAsync(key, value);
+  }
+
 function Checkbox({ checked, onChange }) {
     return (
         <TouchableOpacity onPress={onChange}>
@@ -43,6 +53,10 @@ export default function App() {
 
     const userId='LclLunmXIXu2vAwX0AE8';
 
+    const { setId, id } = React.useContext(
+        UserContext
+      );
+
     const [user, setUser] = React.useState()
     const [completedHabits, setCompletedHabits] = React.useState([]);
     const [remainingHabits, setRemainingHabits] = React.useState([]);
@@ -51,7 +65,7 @@ export default function App() {
 
         if (!userId) return;
         async function getData() {
-            const docRef = doc(db, 'users', userId); // Hier 'user1' durch die ID des gewünschten Dokuments ersetzen
+            const docRef = doc(db, 'users', id); // Hier 'user1' durch die ID des gewünschten Dokuments ersetzen
             const docSnapshot = await getDoc(docRef);
 
             console.log("fetch..")
@@ -133,7 +147,17 @@ export default function App() {
                         </View>
                     );
                 })}
+
+                <TouchableOpacity onPress={( )=>{
+                     save('userId', '');
+                     setId('')
+                     
+                     }}>
+                    <Text>logout</Text>
+                </TouchableOpacity>
             </View>
+
+
 
         </SafeAreaView>
     )

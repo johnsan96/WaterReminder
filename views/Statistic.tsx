@@ -5,9 +5,16 @@ import * as SecureStore from 'expo-secure-store';
 import db from '../db/firebase'
 import { Ionicons } from '@expo/vector-icons';
 import * as Notifications from 'expo-notifications';
+import { UserContext } from '../navigation/UserContext';
 
 
-function UserForm() {
+function Statistic({ navigation }) {
+
+    const { setId } = React.useContext(
+        UserContext
+    );
+
+
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [habit, setHabit] = useState('');
@@ -34,20 +41,27 @@ function UserForm() {
     const handleSubmit = async () => {
         try {
             // Speichern der Benutzerdaten in Firebase
-            const userRef = await addDoc(collection(db, 'users'), {
-                name,
-                email,
-                habits,
-                level: parseInt(level, 10), // Konvertieren in eine Zahl
-                points: parseInt(points, 10), // Konvertieren in eine Zahl
-                remind,
-                pushToken,
-            });
+            if (name && email) {
+                const userRef = await addDoc(collection(db, 'users'), {
+                    name,
+                    email,
+                    habits,
+                    level: parseInt(level, 10), // Konvertieren in eine Zahl
+                    points: parseInt(points, 10), // Konvertieren in eine Zahl
+                    remind,
+                    pushToken,
+                });
 
-            // Speichern der Doc ID im AsyncStorage
+                // Speichern der Doc ID im AsyncStorage
 
-            await SecureStore.setItemAsync('userId', userRef.id);
-            console.log('Benutzer erstellt:', userRef.id);
+                await SecureStore.setItemAsync('userId', userRef.id);
+                console.log('Benutzer erstellt:', userRef.id);
+                setId(userRef.id)
+                navigation.navigate('Dashboard', { screen: 'Home' });
+            } else {
+                alert('Bitte Name & Email eingeben!')
+            }
+
         } catch (error) {
             console.error('Fehler beim Erstellen des Benutzers:', error);
         }
@@ -122,8 +136,10 @@ function UserForm() {
             </View>
 
             <Button title="Absenden" onPress={handleSubmit} />
+
+            <Button title="Account wiederherstellen" onPress={() => navigation.navigate('Reactivate')} />
         </View>
     );
 }
 
-export default UserForm;
+export default Statistic;

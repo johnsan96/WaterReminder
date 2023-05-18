@@ -14,6 +14,9 @@ import Home from "../views/Home";
 import About from "../views/About";
 import Statistic from "../views/Statistic";
 import Detail from "../views/Detail";
+import Reactivate from "../views/Reactivate"
+import * as SecureStore from 'expo-secure-store';
+import { UserContext } from "./UserContext";
 
 { /**
 *
@@ -39,21 +42,67 @@ export default function Navigation() {
  */
 /* const Stack = createNativeStackNavigator<RootStackParamList>(); */
 
-const AboutStack = createNativeStackNavigator();
+const Stack = createNativeStackNavigator();
 
 
 const Tab = createBottomTabNavigator();
 
 function TabNavigator() {
 
+  const [id, setId] = React.useState('');
+
+  React.useEffect(() => {
+    // Fetch the token from storage then navigate to our appropriate place
+    const bootstrapAsync = async () => {
+
+
+      try {
+        let userId = await SecureStore.getItemAsync('userId');
+        setId(userId)
+
+        console.log(userId)
+
+      } catch (e) {
+
+      }
+
+    };
+
+    bootstrapAsync();
+  }, []);
+
+  function MyTabs() {
+    return (
+      <Tab.Navigator>
+        <Tab.Screen name="Home" component={Home} />
+        <Tab.Screen name="Statistics" component={Detail} />
+        <Tab.Screen name="Profil" component={About} />
+    
+
+      </Tab.Navigator>
+    );
+  }
+
+
   return (
-    <Tab.Navigator initialRouteName="Home"
-    >
-      <Tab.Screen name="Home" component={Home} />
-      <Tab.Screen name="Detail" component={Detail} />
-      <Tab.Screen name="Statistic" component={Statistic} />
-      <Tab.Screen name="Profil" component={About} />
-    </Tab.Navigator>
+
+    <UserContext.Provider value={{ id, setId }}>
+      <Stack.Navigator>
+        {
+          id
+
+            ?
+            <Stack.Screen options={{ headerShown: false }} name="Dashboard" component={MyTabs} />
+            :
+            <>
+              <Stack.Screen name="Remindly" component={Statistic} />
+              <Stack.Screen name="Reactivate" component={Reactivate} />
+            </>
+
+        }
+
+      </Stack.Navigator>
+    </UserContext.Provider>
   );
 
 }
