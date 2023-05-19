@@ -1,69 +1,40 @@
 import React from 'react'
-import {
-    ActivityIndicator,
-    Alert,
-    TouchableOpacity,
-    Platform,
-    SafeAreaView,
-    StyleSheet,
-    Text,
-    View,
-    Switch
-} from 'react-native'
-import { Ionicons } from '@expo/vector-icons';
+import { ActivityIndicator, TouchableOpacity, SafeAreaView, Text, View } from 'react-native'
 import db from '../db/firebase'
-
 import { doc, getDoc } from "firebase/firestore";
-
 import * as SecureStore from 'expo-secure-store';
-
 import { UserContext } from '../navigation/UserContext';
-
-
+import * as Notifications from 'expo-notifications';
+import { Checkbox } from '../components/Checkbox';
+import { schedulePushNotification } from '../helpers/notification';
 
 async function save(key, value) {
     await SecureStore.setItemAsync(key, value);
-  }
-
-function Checkbox({ checked, onChange }) {
-    return (
-        <TouchableOpacity onPress={onChange}>
-            <View style={{
-                width: 24,
-                height: 24,
-                borderRadius: 12,
-                borderWidth: 2,
-                borderColor: checked ? 'green' : 'black',
-                justifyContent: 'center',
-                alignItems: 'center',
-            }}>
-                {checked && <View style={{
-                    width: 12,
-                    height: 12,
-                    borderRadius: 6,
-                    backgroundColor: 'green',
-                }} />}
-            </View>
-        </TouchableOpacity>
-    );
 }
 
+Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldPlaySound: true,
+        shouldSetBadge: false,
+    }),
+});
 
 export default function App() {
 
-    const userId='LclLunmXIXu2vAwX0AE8';
-
     const { setId, id } = React.useContext(
         UserContext
-      );
+    );
 
     const [user, setUser] = React.useState()
     const [completedHabits, setCompletedHabits] = React.useState([]);
     const [remainingHabits, setRemainingHabits] = React.useState([]);
 
+
+
     React.useEffect(() => {
 
-        if (!userId) return;
+        if (!id) return;
         async function getData() {
             const docRef = doc(db, 'users', id); // Hier 'user1' durch die ID des gewünschten Dokuments ersetzen
             const docSnapshot = await getDoc(docRef);
@@ -74,7 +45,71 @@ export default function App() {
                 const user = docSnapshot.data();
                 setUser(docSnapshot.data());
 
-                setRemainingHabits(user.habits || []);
+
+                let completedHabitsLocalStorage = await SecureStore.getItemAsync('completedHabits');
+
+                if (completedHabitsLocalStorage) {
+
+                    let completedHabitsLocalStorageParsed = JSON.parse('' + completedHabitsLocalStorage + '');
+                    let today = new Date();
+                    let date = new Date(completedHabitsLocalStorageParsed.date)
+
+                    console.log('dates: ' + today.getDate() + " " + date.getDate())
+
+                    if (date.getDate() != today.getDate()) {
+                        save(completedHabits, '');
+                        setCompletedHabits([]);
+                    } else {
+                        setCompletedHabits(completedHabitsLocalStorageParsed.habits);
+                    }
+
+                }
+
+                let remainingHabitsLocalStorage = await SecureStore.getItemAsync('remainingHabits');
+
+
+                if (remainingHabitsLocalStorage) {
+                    let remainingHabitsLocalStorageParsed = JSON.parse('' + remainingHabitsLocalStorage + '');
+
+                    let today = new Date();
+                    let date = new Date(remainingHabitsLocalStorageParsed.date)
+
+                    console.log('dates: ' + today.getDate() + " " + date.getDate())
+
+                    if (date.getDate() != today.getDate()) {
+                     
+                        setRemainingHabits(user.habits || []);
+
+                        let tmp = { 'date': new Date(), 'habits': [...user.habits] }
+
+                        console.log(JSON.stringify(tmp))
+                        save('remainingHabits', JSON.stringify(tmp))
+
+                        return;
+                    } 
+
+                }
+
+                console.log("Hallo hier gehts weiter.")
+
+                if (!remainingHabitsLocalStorage) {
+
+                    console.log('Keine remainingHabits im LS')
+                    setRemainingHabits(user.habits || []);
+
+                    let tmp = { 'date': new Date(), 'habits': [...user.habits] }
+
+                    console.log(JSON.stringify(tmp))
+                    save('remainingHabits', JSON.stringify(tmp))
+                } else {
+                    let remainingHabitsLocalStorageParsed = JSON.parse('' + remainingHabitsLocalStorage + '');
+                    console.log('remainingHabits in LS: ' + remainingHabitsLocalStorageParsed.habits)
+                    setRemainingHabits(remainingHabitsLocalStorageParsed.habits)
+
+                }
+
+                if (user.remind)
+                    await schedulePushNotification()
 
             } else {
                 console.log('Das Dokument existiert nicht.');
@@ -83,27 +118,46 @@ export default function App() {
 
         getData()
 
-    }, [userId]);
+    }, [id]);
 
     const handleToggleHabit = async (habit) => {
         try {
-         
-          setCompletedHabits((prevCompletedHabits) => {
-            if (prevCompletedHabits.includes(habit)) {
-              return prevCompletedHabits.filter((id) => id !== habit);
-            } else {
-              return [...prevCompletedHabits, habit];
+
+            setCompletedHabits((prevCompletedHabits) => {
+                if (prevCompletedHabits.includes(habit)) {
+                    return prevCompletedHabits.filter((id) => id !== habit);
+                } else {
+
+                    let tmp = { 'date': new Date(), 'habits': [...prevCompletedHabits, habit] }
+                    console.log('new completed  habits: ' + tmp)
+                    console.log('new completed habit after check: ' + JSON.stringify(tmp))
+                    save('completedHabits', JSON.stringify(tmp))
+
+                    return [...prevCompletedHabits, habit];
+
+
+                }
+            });
+
+            setRemainingHabits((prevRemainingHabits) => {
+
+                let habits = prevRemainingHabits.filter((remainingHabit) => remainingHabit !== habit)
+
+                let tmp = { 'date': new Date(), 'habits': [...habits] }
+
+                console.log('new remaining habit after check: ' + JSON.stringify(tmp))
+                save('remainingHabits', JSON.stringify(tmp))
+
+
+                return habits;
             }
-          });
-    
-          setRemainingHabits((prevRemainingHabits) =>
-            prevRemainingHabits.filter((remainingHabit) => remainingHabit !== habit)
-          );
+
+            );
         } catch (error) {
-          console.error('Fehler beim Aktualisieren der Daten:', error);
+            console.error('Fehler beim Aktualisieren der Daten:', error);
         }
-      };
-    
+    };
+
 
     return (
         <SafeAreaView >
@@ -148,16 +202,35 @@ export default function App() {
                     );
                 })}
 
-                <TouchableOpacity onPress={( )=>{
-                     save('userId', '');
-                     setId('')
-                     
-                     }}>
-                    <Text>logout</Text>
-                </TouchableOpacity>
+                <View style={{ marginTop: '3%' }}>
+
+                    <Text>Test Buttons</Text>
+
+                    <TouchableOpacity style={{ backgroundColor: 'red', padding: '2%', marginTop: '2%' }} onPress={() => {
+                        save('userId', '');
+                        setId('')
+
+                    }}>
+                        <Text style={{ color: '#fff' }}>Logout</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity style={{ backgroundColor: 'red', padding: '2%', marginTop: '2%' }} onPress={async () => {
+                        save('remainingHabits', '');
+                        /*    let remainingHabitsLocalStorage = await SecureStore.getItemAsync('remainingHabits');
+                           console.log(JSON.parse(''+remainingHabitsLocalStorage+'')) */
+                    }}>
+                        <Text style={{ color: '#fff' }}>Reset remaining habits</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity style={{ backgroundColor: 'red', padding: '2%', marginTop: '2%' }} onPress={() => {
+                        save('completedHabits', '');
+                    }}>
+                        <Text style={{ color: '#fff' }}>Reset completed habits</Text>
+                    </TouchableOpacity>
+
+                </View>
+
             </View>
-
-
 
         </SafeAreaView>
     )

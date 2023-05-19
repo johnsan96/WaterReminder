@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, Button, FlatList } from 'react-native';
 import { doc, getDoc, updateDoc, arrayRemove, arrayUnion } from 'firebase/firestore';
 import { Ionicons } from '@expo/vector-icons';
+import { UserContext } from '../navigation/UserContext';
 
 function About() {
 
@@ -14,6 +15,11 @@ function About() {
     const [newHabit, setNewHabit] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
+    
+    const { setId,id } = React.useContext(
+        UserContext
+    );
+
     useEffect(() => {
         fetchData();
     }, [userId]);
@@ -21,10 +27,12 @@ function About() {
     const fetchData = async () => {
         if (!userId) return;
 
+        console.log(id)
+
         setIsLoading(true);
 
         try {
-            const userRef = doc(db, 'users', userId);
+            const userRef = doc(db, 'users', id);
             const snapshot = await getDoc(userRef);
 
             if (snapshot.exists()) {
@@ -48,7 +56,7 @@ function About() {
     const handleUpdate = async () => {
         if (!userId) return;
 
-        const userRef = doc(db, 'users', userId);
+        const userRef = doc(db, 'users', id);
 
         try {
             await updateDoc(userRef, { name, points, habits });

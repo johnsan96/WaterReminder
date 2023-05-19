@@ -10,10 +10,9 @@ import { UserContext } from '../navigation/UserContext';
 
 function Statistic({ navigation }) {
 
-    const { setId } = React.useContext(
+    const { setId,id } = React.useContext(
         UserContext
     );
-
 
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
